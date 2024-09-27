@@ -5,6 +5,8 @@ import ShopByAge from "./components/ShopByAge";
 import AwardWinningComponent from "./components/AwardWinningComponent";
 import ShopByPrice from "./components/ShopByPrice";
 import LatestArrivals from "./components/LatestArrivals";
+
+
 const Home: React.FC = () => {
   return (
     <>
