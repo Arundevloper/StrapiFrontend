@@ -2,7 +2,12 @@ import api from "../_utils/GlobalApi";
 import { ProductResponse } from "../_utils/types/Product";
 
 // Function to fetch products by category slug
-export const getProductsBySlug = async (categorySlug: string): Promise<ProductResponse> => {
+export const getProductsBySlug = async (
+  categorySlug: string,
+  page: number = 1,
+  pageSize: number = 3 // You can adjust the default page size
+): Promise<ProductResponse> => {
+  console.log("slug from product is ", categorySlug);
   try {
     const response = await api.get<ProductResponse>('/products', {
       params: {
@@ -12,6 +17,10 @@ export const getProductsBySlug = async (categorySlug: string): Promise<ProductRe
               $eq: categorySlug,
             },
           },
+        },
+        pagination: {
+          page,     // Set the current page
+          pageSize, // Set the number of items per page
         },
         populate: '*', // Populate all related fields
       },
@@ -24,6 +33,7 @@ export const getProductsBySlug = async (categorySlug: string): Promise<ProductRe
     throw error; // Re-throw the error for handling in the component
   }
 };
+
 
 // Usage Example
 // const fetchProducts = async () => {

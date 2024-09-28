@@ -1,50 +1,72 @@
-"use client";
-
-import React, { useEffect, useState } from 'react';
-import Head from 'next/head'; // Import Head component for SEO
+import React, { useEffect, useRef, useState } from 'react';
+import Head from 'next/head';
 import Navbar from '../layout/Navbar';
 import Footer from '../layout/Footer';
 import ProductCard from '../components/productCard';
-import { getProductsBySlug } from '../api/productCategory';
 import { Product } from '../_utils/types/Product';
+import { Category } from '../_utils/types/Category';
+import { getProductsBySlug } from '../api/productCategory';
+import { getCategory } from '../api/category';
 
 interface Props {
   params: {
     slug: string;
   };
+  initialProducts: Product[];
+  metaTitle: string;
+  metaDescription: string;
+  totalProducts: number;
+  error?: string | null;
 }
 
-const ProductPage: React.FC<Props> = ({ params }) => {
+const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, metaDescription, totalProducts, error }) => {
   const { slug } = params;
-  const [products, setProducts] = useState<Product[]>([]);
-  const [metaTitle, setMetaTitle] = useState<string>(''); // State for meta title
-  const [metaDescription, setMetaDescription] = useState<string>(''); // State for meta description
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>(initialProducts);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1); // Track the current page for loading more products
+  const [hasMore, setHasMore] = useState(initialProducts.length < totalProducts); // Track if there are more products to load
+  const loadMoreRef = useRef<HTMLDivElement | null>(null); // Ref for the loading trigger
+
+  if (error) return <div>{error}</div>;
+
+  const loadMoreProducts = async () => {
+    if (loading || !hasMore) return; // Prevent multiple loads at once and stop if no more products
+    setLoading(true);
+
+    try {
+      const response = await getProductsBySlug(slug, page + 1); // Fetch next page of products
+      setProducts((prevProducts) => [...prevProducts, ...response.data]);
+      setPage((prevPage) => prevPage + 1);
+
+      // Update hasMore based on the total number of products
+      if (products.length + response.data.length >= totalProducts) {
+        setHasMore(false); // No more products to load
+      }
+    } catch (error) {
+      console.error('Error fetching more products:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const fetchedProducts = await getProductsBySlug(slug);
+    const observer = new IntersectionObserver((entries) => {
+      const entry = entries[0];
+      if (entry.isIntersecting) {
+        loadMoreProducts(); // Load more products when the ref is in view
+      }
+    });
 
-        // Set the fetched meta title and description from product data
-        setMetaTitle(fetchedProducts.meta_title || `Products in ${slug} category - Your Store`);
-        setMetaDescription(fetchedProducts.meta_desc || `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`);
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
 
-        setProducts(fetchedProducts.data); // Assuming `data` is where the array of products resides
-      } catch (error) {
-        console.error('Error fetching products:', error);
-        setError('Failed to load products');
-      } finally {
-        setLoading(false);
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
       }
     };
-
-    fetchProducts();
-  }, [slug]);
-
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div>{error}</div>;
+  }, [loadMoreRef, loading, hasMore]);
 
   return (
     <>
@@ -67,11 +89,16 @@ const ProductPage: React.FC<Props> = ({ params }) => {
                 key={product.id}
                 image={product.image}
                 title={product.product_name}
-                sellingPrice={product.price.toFixed(2)}
+                sellingPrice={product.price}
                 percentagePrice={product.discount}
               />
             ))}
           </div>
+          {hasMore && (
+            <div ref={loadMoreRef} className="mt-4">
+              {loading && <p>Loading more products...</p>}
+            </div>
+          )}
         </div>
       </section>
 
@@ -80,18 +107,24 @@ const ProductPage: React.FC<Props> = ({ params }) => {
   );
 };
 
-export async function getServerSideProps(context) {
+// Fetch data server-side using getServerSideProps
+export async function getServerSideProps(context: any) {
   const { slug } = context.params;
 
   try {
-    const fetchedProducts = await getProductsBySlug(slug);
+    const fetchedProducts = await getProductsBySlug(slug, 1); // Fetch initial page
+    const fetchCategory = await getCategory(slug);
+    const totalProducts = fetchedProducts.meta?.pagination?.total || 0;
 
     return {
       props: {
         params: {
           slug,
         },
-        initialProducts: fetchedProducts.data, // Pass initial products data fetched server-side
+        initialProducts: fetchedProducts.data || [],
+        totalProducts,
+        metaTitle: fetchCategory?.meta_title || `Products in ${slug} category - Your Store`,
+        metaDescription: fetchCategory?.meta_desc || `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
       },
     };
   } catch (error) {
@@ -101,7 +134,10 @@ export async function getServerSideProps(context) {
         params: {
           slug,
         },
-        initialProducts: [], // Return empty array or handle error state as needed
+        initialProducts: [],
+        totalProducts: 0,
+        metaTitle: `Products in ${slug} category - Your Store`,
+        metaDescription: `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
         error: 'Failed to load products',
       },
     };
