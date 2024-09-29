@@ -4,9 +4,9 @@ import Navbar from '../layout/Navbar';
 import Footer from '../layout/Footer';
 import ProductCard from '../components/productCard';
 import { Product } from '../_utils/types/Product';
-import { Category } from '../_utils/types/Category';
-import { getProductsBySlug } from '../api/productCategory';
+import { getProductByCategory } from '../api/productCategory';
 import { getCategory } from '../api/category';
+import Spinner from '../components/ReactLoading';
 
 interface Props {
   params: {
@@ -34,7 +34,7 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
     setLoading(true);
 
     try {
-      const response = await getProductsBySlug(slug, page + 1); // Fetch next page of products
+      const response = await getProductByCategory(slug, page + 1); // Fetch next page of products
       setProducts((prevProducts) => [...prevProducts, ...response.data]);
       setPage((prevPage) => prevPage + 1);
 
@@ -91,12 +91,13 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
                 title={product.product_name}
                 sellingPrice={product.price}
                 percentagePrice={product.discount}
+                productSlug={product.slug}
               />
             ))}
           </div>
           {hasMore && (
             <div ref={loadMoreRef} className="mt-4">
-              {loading && <p>Loading more products...</p>}
+              {loading && <Spinner  type="bubbles" color="#42a2a2" />}
             </div>
           )}
         </div>
@@ -112,7 +113,7 @@ export async function getServerSideProps(context: any) {
   const { slug } = context.params;
 
   try {
-    const fetchedProducts = await getProductsBySlug(slug, 1); // Fetch initial page
+    const fetchedProducts = await getProductByCategory(slug, 1); // Fetch initial page
     const fetchCategory = await getCategory(slug);
     const totalProducts = fetchedProducts.meta?.pagination?.total || 0;
 

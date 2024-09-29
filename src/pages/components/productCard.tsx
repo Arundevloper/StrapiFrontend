@@ -1,3 +1,4 @@
+import Link from "next/link";
 import React from "react";
 import { FiShoppingCart } from "react-icons/fi";
 
@@ -6,6 +7,7 @@ interface ProductCardProps {
   title: string;
   sellingPrice: number; // Original price before discount
   percentagePrice: number; // Discount percentage
+  productSlug:string;
 }
 
 const ProductCard: React.FC<ProductCardProps> = ({
@@ -13,6 +15,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
   title,
   sellingPrice,
   percentagePrice,
+  productSlug
+
 }) => {
   // Calculate the current price after discount
   const price = sellingPrice - (sellingPrice * percentagePrice) / 100;
@@ -22,7 +26,9 @@ const ProductCard: React.FC<ProductCardProps> = ({
       <div className="bg-gray-100 to-white p-6 rounded-lg duration-300">
         {/* Centered Image */}
         <div className="bg-gray-100 p-2 rounded-lg flex justify-center items-center">
-          <a
+       
+          <Link
+             href={`/products/${productSlug}`}
             className="block relative rounded overflow-hidden group cursor-pointer"
             style={{ width: "256px", height: "255px" }}
           >
@@ -33,7 +39,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
             />
             {/* Overlay Effect */}
             <div className="absolute inset-0 bg-black opacity-0 transition-opacity duration-300 group-hover:opacity-25 rounded-lg"></div>
-          </a>
+          </Link>
         </div>
         {/* Product Info */}
         <div className="mt-4 text-left">

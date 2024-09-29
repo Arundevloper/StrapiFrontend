@@ -132,7 +132,7 @@ const Navbar: React.FC = () => {
             {categories.map((category) => (
               <div className="relative group" key={category.slug}>
                 <Link
-                  href={`/categories/${category.slug}`}
+                  href={`/collection/${category.slug}`}
                   className="text-gray-700  relative flex items-center"
                 >
                   <span className="transition-colors duration-300">
