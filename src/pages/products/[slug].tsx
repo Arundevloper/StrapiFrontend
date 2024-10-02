@@ -3,11 +3,33 @@ import Navbar from "../layout/Navbar";
 import Footer from "../layout/Footer";
 import { FiShoppingCart, FiChevronUp, FiChevronDown } from "react-icons/fi";
 import moment from "moment";
-import {getProductBySlug} from "../api/productCategory"
+import {
+  getProductBySlug,
+  fetchAllProductImages,
+} from "../api/productCategory";
+import { useCart } from "../context/CartContext";
+import { Helmet } from "react-helmet";
 
-function ProductPage({ product }) {
+function ProductPage({ productData }) {
+  const {
+    product_name,
+    product_desc,
+    price,
+    discount,
+    stock_quantity,
+    slug,
+    images,
+  } = productData;
+
+  // Convert product_desc from rich text format to a string
+  const description = product_desc
+    .map((desc) => desc.children.map((child) => child.text).join(""))
+    .join("\n");
+
   // State for image gallery, quantity, pincode, and description visibility
-  const [mainImage, setMainImage] = useState(product.images[0]);
+  const [mainImage, setMainImage] = useState(
+    images[0] ? `http://localhost:1337/${images[0]}` : ""
+  );
   const [quantity, setQuantity] = useState(1);
   const [visibleStartIndex, setVisibleStartIndex] = useState(0);
   const visibleThumbnailCount = 4;
@@ -19,14 +41,16 @@ function ProductPage({ product }) {
 
   // Estimated Delivery
   const deliveryDays = 5;
-  const estimatedDeliveryDate = moment().add(deliveryDays, "days").format("MMMM Do, YYYY");
+  const estimatedDeliveryDate = moment()
+    .add(deliveryDays, "days")
+    .format("MMMM Do, YYYY");
 
   // Increase quantity
   const increaseQuantity = () => {
     setQuantity((prevQty) => prevQty + 1);
   };
 
-  // Decrease quantity
+  // Decrease quantity, ensuring it doesn't go below 1
   const decreaseQuantity = () => {
     setQuantity((prevQty) => (prevQty > 1 ? prevQty - 1 : 1));
   };
@@ -40,13 +64,13 @@ function ProductPage({ product }) {
 
   // Scroll down the thumbnails
   const scrollDown = () => {
-    if (visibleStartIndex + visibleThumbnailCount < product.images.length) {
+    if (visibleStartIndex + visibleThumbnailCount < images.length) {
       setVisibleStartIndex((prevIndex) => prevIndex + 1);
     }
   };
 
   // Get the visible thumbnails
-  const visibleThumbnails = product.images.slice(
+  const visibleThumbnails = images.slice(
     visibleStartIndex,
     visibleStartIndex + visibleThumbnailCount
   );
@@ -57,48 +81,94 @@ function ProductPage({ product }) {
       setPincodeError("Invalid pincode. Please enter a 6-digit pincode.");
     } else {
       setPincodeError("");
-      // Further logic for delivery info can be implemented here
+      // Optionally, you can implement further logic here (e.g., fetching delivery info)
     }
+  };
+
+  // Use Cart Context
+  const { addItem } = useCart();
+
+  // Handle Add to Cart
+  const handleAddToCart = () => {
+    addItem({
+      productSlug: slug,
+      productName: product_name,
+      productQuantity: quantity,
+      price: price,
+      discount: discount,
+      stock: stock_quantity,
+      productImage: mainImage,
+    });
   };
 
   return (
     <div>
+      <Helmet>
+        <title>{productData.meta_title}</title>
+        <meta
+          name="description"
+          content={productData.meta_desc[0].children[0].text}
+        />
+        <meta property="og:title" content={productData.meta_title} />
+        <meta
+          property="og:description"
+          content={productData.meta_desc[0].children[0].text}
+        />
+        <meta property="og:type" content="product" />
+        <meta property="og:image" content={mainImage} />
+        <meta
+          property="og:url"
+          content={`${process.env.REACT_APP_SITE_URL}/products/${productData.slug}`}
+        />
+      </Helmet>
+
       <Navbar />
       <section className="text-gray-600 body-font overflow-hidden mt-12">
         <div className="container px-5 py-24 mx-auto">
           <div className="lg:w-4/5 mx-auto flex flex-wrap">
+            {/* Image gallery with small images on the left */}
             <div className="w-full lg:w-1/2 h-auto flex flex-col-reverse lg:flex-row">
+              {/* Scrollable thumbnail container */}
               <div className="flex flex-col items-center mt-4 lg:mt-0 lg:mr-4">
+                {/* Up Button */}
                 <button
                   onClick={scrollUp}
                   className={`px-10 py-2 text-xl rounded focus:outline-none transition ${
-                    visibleStartIndex === 0 ? "opacity-50 cursor-not-allowed" : ""
+                    visibleStartIndex === 0
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
                   }`}
                 >
                   <FiChevronUp />
                 </button>
 
+                {/* Thumbnails */}
                 <div className="flex lg:flex-col space-x-2 lg:space-x-0 lg:space-y-2 overflow-hidden">
                   {visibleThumbnails.map((img, idx) => (
                     <img
                       key={idx}
-                      src={img}
+                      src={`http://localhost:1337/${img}`}
                       alt={`gallery ${idx}`}
                       className={`w-20 h-20 object-cover rounded cursor-pointer border ${
-                        img === mainImage
+                        `http://localhost:1337/${img}` === mainImage
                           ? "border-blue-500"
                           : "border-gray-300"
                       } transition-transform transform hover:scale-105`}
-                      onClick={() => setMainImage(img)}
+                      onClick={() =>
+                        setMainImage(`http://localhost:1337/${img}`)
+                      }
                     />
                   ))}
                 </div>
 
+                {/* Down Button */}
                 <button
                   onClick={scrollDown}
-                  disabled={visibleStartIndex + visibleThumbnailCount >= product.images.length}
+                  disabled={
+                    visibleStartIndex + visibleThumbnailCount >= images.length
+                  }
                   className={`p-2 text-xl focus:outline-none transition ${
-                    visibleStartIndex + visibleThumbnailCount >= product.images.length
+                    visibleStartIndex + visibleThumbnailCount >= images.length
                       ? "opacity-50 cursor-not-allowed"
                       : ""
                   }`}
@@ -107,6 +177,7 @@ function ProductPage({ product }) {
                 </button>
               </div>
 
+              {/* Main Image Container with fixed 491x491 size */}
               <div className="w-[500px] h-[500px] flex items-center justify-center bg-white rounded transition-all duration-300 ease-in-out">
                 <img
                   alt="product"
@@ -116,15 +187,17 @@ function ProductPage({ product }) {
               </div>
             </div>
 
+            {/* Product details */}
             <div className="w-full lg:w-1/2 lg:pl-10 mt-6 lg:mt-0">
               <h1 className="text-3xl title-font text-custom-blue font-medium mb-1">
-                {product.name}
+                {product_name}
               </h1>
 
+              {/* Description with See More */}
               <p className="leading-relaxed">
                 {showFullDescription
-                  ? product.description
-                  : `${product.description.substring(0, 200)}... `}
+                  ? description
+                  : `${description.substring(0, 200)}... `}
                 <button
                   onClick={() => setShowFullDescription(!showFullDescription)}
                   className="text-custom-blue underline ml-1"
@@ -133,26 +206,36 @@ function ProductPage({ product }) {
                 </button>
               </p>
 
+              {/* Pricing and Discount */}
               <div className="flex mt-6 items-center pb-5 border-b-2 border-gray-100 mb-5">
                 <div className="mt-2 flex items-center">
                   <p className="bg-red-500 text-white text-sm font-medium mr-4 py-1 px-2 rounded-full">
-                    {((500 / (product.price + 500)) * 100).toFixed(0)}% OFF
+                    {discount}% OFF
                   </p>
-                  <p className="text-gray-600 text-2xl font-semibold mr-4">₹{product.price}</p>
-                  <p className="text-gray-400 line-through text-sm">₹{(product.price + 500).toFixed(2)}</p>
+                  <p className="text-gray-600 text-2xl font-semibold mr-4">
+                    ₹{price}
+                  </p>
+                  <p className="text-gray-400 line-through text-sm">
+                    ₹{(price + 500).toFixed(2)}
+                  </p>
                 </div>
               </div>
 
+              {/* Quantity Selector with Label */}
               <div className="flex w-full items-center justify-between">
                 <div className="flex items-center mb-5">
-                  <span className="mr-4 text-gray-700 font-medium">Quantity:</span>
+                  <span className="mr-4 text-gray-700 font-medium">
+                    Quantity:
+                  </span>
                   <button
                     onClick={decreaseQuantity}
                     className="bg-gray-300 text-gray-600 px-3 py-1 rounded-l focus:outline-none"
                   >
                     -
                   </button>
-                  <span className="px-4 py-1 bg-gray-200 text-gray-900">{quantity}</span>
+                  <span className="px-4 py-1 bg-gray-200 text-gray-900">
+                    {quantity}
+                  </span>
                   <button
                     onClick={increaseQuantity}
                     className="bg-gray-300 text-gray-600 px-3 py-1 rounded-r focus:outline-none"
@@ -161,37 +244,22 @@ function ProductPage({ product }) {
                   </button>
                 </div>
 
+                {/* Add to Cart Button */}
                 <div className="flex">
-                  <button className="flex items-center justify-center font-semibold py-2 px-4 rounded-lg border-2 border-custom-blue text-custom-blue bg-white transition-colors duration-300 hover:bg-custom-blue hover:border-custom-blue hover:text-white">
+                  <button
+                    onClick={handleAddToCart}
+                    className="flex items-center justify-center font-semibold py-2 px-4 rounded-lg border-2 border-custom-blue text-custom-blue bg-white transition-colors duration-300 hover:bg-custom-blue hover:border-custom-blue hover:text-white"
+                  >
                     <FiShoppingCart className="mr-2 text-xl" />
                     Add to Cart
                   </button>
                 </div>
               </div>
 
-              <div className="mt-6">
-                <p className="font-semibold">Check Delivery Estimate:</p>
-                <input
-                  type="text"
-                  value={pincode}
-                  onChange={(e) => setPincode(e.target.value)}
-                  className="border border-gray-300 p-2 rounded mt-2 w-48"
-                  placeholder="Enter Pincode"
-                />
-                <button
-                  onClick={validatePincode}
-                  className="bg-blue-500 text-white px-3 py-1 rounded ml-2"
-                >
-                  Check
-                </button>
-                {pincodeError && <p className="text-red-500 text-sm">{pincodeError}</p>}
-              </div>
-
-              <div className="mt-6 text-gray-600">
-                <p className="font-semibold">Estimated Delivery:</p>
-                <p>{estimatedDeliveryDate}</p>
-                <p className="text-sm text-gray-500">
-                  Order now and receive it within {deliveryDays} days!
+              {/* Additional Details */}
+              <div className="mt-4">
+                <p className="text-sm text-gray-600">
+                  Estimated Delivery: {estimatedDeliveryDate}
                 </p>
               </div>
             </div>
@@ -202,22 +270,23 @@ function ProductPage({ product }) {
     </div>
   );
 }
+export async function getServerSideProps(context: any) {
+  const { slug } = context.query;
 
-// Fetch product data based on slug
-export async function getServerSideProps(context) {
-  const { slug } = context.params; // Extract the slug from the URL parameters
-  const fetchedProduct = await getProductBySlug(slug); // Fetch product data using your API function
+  // Fetch product data using the slug
+  const productData = await getProductBySlug(slug);
 
-  // Check if product exists
-  if (!fetchedProduct) {
-    return {
-      notFound: true, // Return 404 if product is not found
-    };
-  }
+  // Fetch images associated with the product
+  const imageData = await fetchAllProductImages(slug);
+  const images = imageData?.map((img: any) => img.url);
 
   return {
-    props: { product: fetchedProduct }, // Pass product data as props to the component
+    props: {
+      productData: {
+        ...productData,
+        images,
+      },
+    },
   };
 }
-
 export default ProductPage;

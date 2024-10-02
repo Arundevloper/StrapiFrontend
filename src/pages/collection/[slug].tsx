@@ -1,12 +1,12 @@
-import React, { useEffect, useRef, useState } from 'react';
-import Head from 'next/head';
-import Navbar from '../layout/Navbar';
-import Footer from '../layout/Footer';
-import ProductCard from '../components/productCard';
-import { Product } from '../_utils/types/Product';
-import { getProductByCategory } from '../api/productCategory';
-import { getCategory } from '../api/category';
-import Spinner from '../components/ReactLoading';
+import React, { useEffect, useRef, useState } from "react";
+import Head from "next/head";
+import Navbar from "../layout/Navbar";
+import Footer from "../layout/Footer";
+import ProductCard from "../components/productCard";
+import { Product } from "../_utils/types/Product";
+import { getProductByCategory } from "../api/productCategory";
+import { getCategory } from "../api/category";
+import Spinner from "../components/ReactLoading";
 
 interface Props {
   params: {
@@ -19,12 +19,21 @@ interface Props {
   error?: string | null;
 }
 
-const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, metaDescription, totalProducts, error }) => {
+const ProductPage: React.FC<Props> = ({
+  params,
+  initialProducts,
+  metaTitle,
+  metaDescription,
+  totalProducts,
+  error,
+}) => {
   const { slug } = params;
   const [products, setProducts] = useState<Product[]>(initialProducts);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState(1); // Track the current page for loading more products
-  const [hasMore, setHasMore] = useState(initialProducts.length < totalProducts); // Track if there are more products to load
+  const [hasMore, setHasMore] = useState(
+    initialProducts.length < totalProducts
+  ); // Track if there are more products to load
   const loadMoreRef = useRef<HTMLDivElement | null>(null); // Ref for the loading trigger
 
   if (error) return <div>{error}</div>;
@@ -43,7 +52,7 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
         setHasMore(false); // No more products to load
       }
     } catch (error) {
-      console.error('Error fetching more products:', error);
+      console.error("Error fetching more products:", error);
     } finally {
       setLoading(false);
     }
@@ -73,7 +82,10 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
       <Head>
         <title>{metaTitle}</title>
         <meta name="description" content={metaDescription} />
-        <meta name="keywords" content={`products, ${slug}, best products, shop online`} />
+        <meta
+          name="keywords"
+          content={`products, ${slug}, best products, shop online`}
+        />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={`https://yourstore.com/category/${slug}`} />
       </Head>
@@ -82,12 +94,13 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
 
       <section className="text-gray-600 body-font">
         <div className="container px-5 py-24 mx-auto lg:w-3/5">
-          <h1 className="text-3xl font-bold mb-6">Products in {slug} category</h1>
+          <h1 className="text-3xl font-bold mb-6">
+            Products in {slug} category
+          </h1>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
-                image={product.image}
                 title={product.product_name}
                 sellingPrice={product.price}
                 percentagePrice={product.discount}
@@ -97,7 +110,7 @@ const ProductPage: React.FC<Props> = ({ params, initialProducts, metaTitle, meta
           </div>
           {hasMore && (
             <div ref={loadMoreRef} className="mt-4">
-              {loading && <Spinner  type="bubbles" color="#42a2a2" />}
+              {loading && <Spinner type="bubbles" color="#42a2a2" />}
             </div>
           )}
         </div>
@@ -124,12 +137,16 @@ export async function getServerSideProps(context: any) {
         },
         initialProducts: fetchedProducts.data || [],
         totalProducts,
-        metaTitle: fetchCategory?.meta_title || `Products in ${slug} category - Your Store`,
-        metaDescription: fetchCategory?.meta_desc || `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
+        metaTitle:
+          fetchCategory?.meta_title ||
+          `Products in ${slug} category - Your Store`,
+        metaDescription:
+          fetchCategory?.meta_desc ||
+          `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
       },
     };
   } catch (error) {
-    console.error('Error fetching products server-side:', error);
+    console.error("Error fetching products server-side:", error);
     return {
       props: {
         params: {
@@ -139,7 +156,7 @@ export async function getServerSideProps(context: any) {
         totalProducts: 0,
         metaTitle: `Products in ${slug} category - Your Store`,
         metaDescription: `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
-        error: 'Failed to load products',
+        error: "Failed to load products",
       },
     };
   }

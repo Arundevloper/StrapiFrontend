@@ -1,51 +1,16 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import Navbar from "./layout/Navbar";
 import Footer from "./layout/Footer";
-
-interface CartItem {
-  id: number;
-  name: string;
-  price: number;
-  quantity: number;
-  image: string;
-}
+import { useCart } from "./context/CartContext"; // Adjust the path accordingly
+import dynamic from "next/dynamic";
 
 const Cart: React.FC = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "Foil Magic - Animal Wisdom Tales | 4-8 years | DIY Activity Kit",
-      price: 4999, // Prices in paisa for rupees (4999 = ₹49.99)
-      quantity: 1,
-      image: "/product/product2.png",
-    },
-    {
-      id: 2,
-      name: "Foil Magic - Animal Wisdom Tales | 4-8 years | DIY Activity Kit",
-      price: 2999, // ₹29.99
-      quantity: 2,
-      image: "https://dummyimage.com/107x107",
-    },
-  ]);
-
-  const [discount] = useState(10); // Fixed 10% discount for demonstration
-
-  // Function to handle quantity changes
-  const handleQuantityChange = (id: number, newQuantity: number) => {
-    setCartItems((items) =>
-      items.map((item) =>
-        item.id === id
-          ? { ...item, quantity: Math.max(1, newQuantity) }
-          : item
-      )
-    );
-  };
+  const { cart, addItem, removeItem, updateQuantity } = useCart();
+  const discount = 10; // Fixed 10% discount for demonstration
 
   // Calculate total MRP
   const calculateTotalMrp = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cart.reduce((total, item) => total + item.price * item.productQuantity, 0);
   };
 
   // Calculate total price after discount
@@ -66,25 +31,25 @@ const Cart: React.FC = () => {
             <h1 className="text-4xl font-bold text-gray-900 mb-10 text-center">
               Your Shopping Cart
             </h1>
-            {cartItems.length > 0 ? (
+            {cart.length > 0 ? (
               <div className="flex flex-col lg:flex-row items-center justify-center gap-10">
                 {/* Cart Items Section */}
                 <div className="lg:w-1/2 md:w-full">
-                  {cartItems.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between border-b pb-5 mb-5">
+                  {cart.map((item) => (
+                    <div key={item.productSlug} className="flex items-center justify-between border-b pb-5 mb-5">
                       <div className="flex items-center gap-4">
                         <img
-                          src={item.image}
-                          alt={item.name}
+                          src={item.productImage}
+                          alt={item.productName}
                           className="w-[107px] h-[107px] object-contain rounded"
                         />
                         <div>
-                          <h2 className="text-md text-gray-900">{item.name}</h2>
+                          <h2 className="text-md text-gray-900">{item.productName}</h2>
                           {/* Pricing and Discount Section */}
-                          <div className="flex items-center pb-5  mb-5">
+                          <div className="flex items-center pb-5 mb-5">
                             <div className="mt-2 flex items-center">
-                              <p className=" text-red-600 text-sm  mr-4 py-1 px-2 ">
-                                {((500 / (item.price + 500)) * 100).toFixed(0)}% OFF
+                              <p className="text-red-600 text-sm mr-4 py-1 px-2">
+                                {item.discount}% OFF
                               </p>
                               <p className="text-gray-600 text-lg font-medium mr-4">
                                 ₹{(item.price / 100).toFixed(2)}
@@ -100,14 +65,14 @@ const Cart: React.FC = () => {
                         {/* Quantity Controls */}
                         <div className="flex items-center">
                           <button
-                            onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                            onClick={() => updateQuantity(item.productSlug, item.productQuantity - 1)}
                             className="bg-gray-300 text-gray-600 px-3 py-1 rounded-l focus:outline-none"
                           >
                             -
                           </button>
-                          <span className="px-4 py-1 bg-gray-200 text-gray-900">{item.quantity}</span>
+                          <span className="px-4 py-1 bg-gray-200 text-gray-900">{item.productQuantity}</span>
                           <button
-                            onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                            onClick={() => updateQuantity(item.productSlug, item.productQuantity + 1)}
                             className="bg-gray-300 text-gray-600 px-3 py-1 rounded-r focus:outline-none"
                           >
                             +
@@ -115,7 +80,7 @@ const Cart: React.FC = () => {
                         </div>
                         {/* Remove Button */}
                         <button
-                          onClick={() => setCartItems(cartItems.filter((i) => i.id !== item.id))}
+                          onClick={() => removeItem(item.productSlug)}
                           className="text-red-600 hover:text-red-800"
                         >
                           Remove
@@ -152,10 +117,9 @@ const Cart: React.FC = () => {
                     </span>
                   </div>
 
-                  <button className="w-full mt-6 py-3 bg-custom-green text-white rounded-lg ">
-  Proceed to Checkout
-</button>
-
+                  <button className="w-full mt-6 py-3 bg-custom-green text-white rounded-lg">
+                    Proceed to Checkout
+                  </button>
                 </div>
               </div>
             ) : (

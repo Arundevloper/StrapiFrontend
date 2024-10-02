@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, useEffect, ReactNode, useMemo } from 'react';
 
 // Defining the Cart Item Interface
 interface CartItem {
@@ -24,20 +24,30 @@ const CartContext = createContext<CartContextProps | undefined>(undefined);
 
 // Cart Provider Component
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = useState<CartItem[]>([]); // Start with an empty array
+  const [isLoading, setIsLoading] = useState(true); // Loading state to manage hydration
 
+  // Effect to load cart from local storage
   useEffect(() => {
-    // Load cart from localStorage if it exists
-    const storedCart = localStorage.getItem('cart');
-    if (storedCart) {
-      setCart(JSON.parse(storedCart));
+    if (typeof window !== "undefined") { // Ensure we're in the browser
+      const storedCart = localStorage.getItem('cart');
+      if (storedCart) {
+        try {
+          setCart(JSON.parse(storedCart));
+        } catch (error) {
+          console.error('Error parsing cart from localStorage:', error);
+        }
+      }
     }
-  }, []);
+    setIsLoading(false); // Set loading to false after trying to load cart
+  }, []); // Run only once after component mounts
 
+  // Effect to save cart to local storage whenever it changes
   useEffect(() => {
-    // Save cart to localStorage whenever it changes
-    localStorage.setItem('cart', JSON.stringify(cart));
-  }, [cart]);
+    if (!isLoading && typeof window !== "undefined") { // Ensure we're in the browser and not loading
+      localStorage.setItem('cart', JSON.stringify(cart));
+    }
+  }, [cart, isLoading]);
 
   const addItem = (newItem: CartItem) => {
     setCart(prevCart => {
@@ -48,6 +58,7 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
         // Check if the requested quantity exceeds available stock
         if (existingItem.productQuantity + newItem.productQuantity > newItem.stock) {
+          alert('Insufficient stock available');
           return updatedCart; // or handle a notification for insufficient stock
         }
 
@@ -68,9 +79,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       const updatedCart = [...prevCart];
       const itemIndex = updatedCart.findIndex(item => item.productSlug === productSlug);
       if (itemIndex !== -1) {
-        // Ensure the quantity doesn't exceed available stock
-        if (quantity <= updatedCart[itemIndex].stock) {
+        // Ensure the quantity doesn't exceed available stock and is not less than 1
+        if (quantity <= updatedCart[itemIndex].stock && quantity > 0) {
           updatedCart[itemIndex].productQuantity = quantity;
+        } else if (quantity > updatedCart[itemIndex].stock) {
+          alert('Insufficient stock available');
+        } else {
+          // If quantity is zero or less, remove the item from the cart
+          updatedCart.splice(itemIndex, 1);
         }
       }
       return updatedCart;
@@ -78,16 +94,27 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const clearCart = () => {
-    setCart([]);
+    setCart([]); // Clears the cart state
   };
 
+  const contextValue = useMemo(
+    () => ({ cart, addItem, removeItem, updateQuantity, clearCart }),
+    [cart]
+  );
+
+  // Render loading indicator if still loading
+  if (isLoading) {
+    return <div>Loading...</div>; // Replace with a more suitable loading component if needed
+  }
+
   return (
-    <CartContext.Provider value={{ cart, addItem, removeItem, updateQuantity, clearCart }}>
+    <CartContext.Provider value={contextValue}>
       {children}
     </CartContext.Provider>
   );
 };
 
+// Custom hook to use the Cart Context
 export const useCart = () => {
   const context = React.useContext(CartContext);
   if (!context) {

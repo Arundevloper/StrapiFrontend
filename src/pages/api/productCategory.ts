@@ -5,7 +5,7 @@ import { ProductResponse, Product } from "../_utils/types/Product";
 export const getProductByCategory = async (
   categorySlug: string,
   page: number = 1,
-  pageSize: number = 3 // You can adjust the default page size
+  pageSize: number = 6 // You can adjust the default page size
 ): Promise<ProductResponse> => {
   console.log("slug from product is ", categorySlug);
   try {
@@ -23,6 +23,11 @@ export const getProductByCategory = async (
           pageSize, // Set the number of items per page
         },
         populate: "*", // Populate all related fields
+        sort: [
+          {
+            createdAt: "desc" // Sort by createdAt field in descending order
+          }
+        ],
       },
     });
 
@@ -36,6 +41,7 @@ export const getProductByCategory = async (
     throw error; // Re-throw the error for handling in the component
   }
 };
+
 
 // Function to fetch product images by product IDs
 export const getProductBySlug = async (
@@ -62,13 +68,28 @@ export const getProductBySlug = async (
   }
 };
 
-export const fetchSingleImage = async (slug: string[]) => {
+export const fetchSingleImage = async (slug: string) => {
   try {
     const response = await api.get(`/products?filters[slug][$eq]=${slug}&populate[product_images][populate]=product_image`);
 
-  
+   
     // Check if there are any products and images available
      return response.data.data[0].product_images[0].product_image[0].url;
+  } catch (error) {
+    console.error("Error fetching product images:", error);
+    throw error; // Re-throw the error for handling in the component
+  }
+};
+
+export const fetchAllProductImages = async (slug: string) => {
+  try {
+    const response = await api.get(`/products?filters[slug][$eq]=magical_hands&populate[product_images][populate]=product_image`);
+
+console.log(slug);
+    
+  
+    // Check if there are any products and images available
+     return response.data.data[0].product_images[0].product_image;
   } catch (error) {
     console.error("Error fetching product images:", error);
     throw error; // Re-throw the error for handling in the component
