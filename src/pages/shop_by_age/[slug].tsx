@@ -4,8 +4,8 @@ import Navbar from "../layout/Navbar";
 import Footer from "../layout/Footer";
 import ProductCard from "../components/productCard";
 import { Product } from "../_utils/types/Product";
-import { getProductByCategory } from "../api/productCategory";
-import { getCategory } from "../api/category";
+import { getProductByAgeRange } from "../api/productCategory";
+import { getAgeByRange } from "../api/category";
 import Spinner from "../components/ReactLoading";
 import Header from "../components/Header";
 
@@ -49,7 +49,7 @@ const ProductPage: React.FC<Props> = ({
     setLoading(true);
 
     try {
-      const response = await getProductByCategory(slug, page + 1); // Fetch next page of products
+      const response = await getProductByAgeRange(slug, page + 1); // Fetch next page of products
       setProducts((prevProducts) => [...prevProducts, ...response.data]);
       setPage((prevPage) => prevPage + 1);
 
@@ -87,7 +87,7 @@ const ProductPage: React.FC<Props> = ({
     const fetchInitialProducts = async () => {
       setLoading(true);
       try {
-        const response = await getProductByCategory(slug, 1);
+        const response = await getProductByAgeRange(slug, 1);
         setProducts(response.data);
         setPage(1);
         setHasMore(response.meta?.pagination?.total > response.data.length);
@@ -152,8 +152,8 @@ export async function getServerSideProps(context: any) {
   const { slug } = context.params;
 
   try {
-    const fetchedProducts = await getProductByCategory(slug, 1); // Fetch initial page
-    const fetchCategory = await getCategory(slug);
+    const fetchedProducts = await getProductByAgeRange(slug, 1); // Fetch initial page
+    const fetchCategory = await getAgeByRange(slug);
     const totalProducts = fetchedProducts.meta?.pagination?.total || 0;
 
     return {
@@ -161,14 +161,12 @@ export async function getServerSideProps(context: any) {
         params: {
           slug,
         },
-
         initialProducts: fetchedProducts.data || [],
         totalProducts,
         metaTitle:
           fetchCategory?.meta_title ||
           `Products in ${slug} category - Your Store`,
-        cover_image: fetchCategory?.cover_image?.url,
-
+        cover_image: fetchCategory?.cover_image?.url || null, // Set to null if undefined
         metaDescription:
           fetchCategory?.meta_desc ||
           `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
@@ -186,7 +184,7 @@ export async function getServerSideProps(context: any) {
         metaTitle: `Products in ${slug} category - Your Store`,
         metaDescription: `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
         error: "Failed to load products",
-        cover_image: "",
+        cover_image: null, // Ensure cover_image is null if there's an error
       },
     };
   }

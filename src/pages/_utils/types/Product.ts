@@ -21,6 +21,7 @@ export interface Product {
   meta_desc: ProductDesc[];
   stock_quantity: number;
   data: any;
+  stock:number;
 }
 
 export interface Meta {

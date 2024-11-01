@@ -3,7 +3,10 @@ export interface Subcategory {
   name: string; // Assuming subcategory has a name field
   slug: string; // Assuming there is a slug for subcategory
 }
-
+export interface CoverImage {
+  url: string; 
+ 
+}
 export interface Category {
   id: number;
   category_name: string; // Main category name
@@ -12,6 +15,7 @@ export interface Category {
   slug: string; // Slug for the category
   meta_title: string; // Meta title for SEO
   meta_desc: string; // Meta description for SEO
+  cover_image: CoverImage;
 }
 
 export interface Meta {

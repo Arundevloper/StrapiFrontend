@@ -9,6 +9,8 @@ interface CartItem {
   discount: number;
   stock: number;
   productImage: string; // New field for product image URL
+  productId:number;
+
 }
 
 // Defining the Cart Context Properties

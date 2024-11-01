@@ -4,8 +4,8 @@ import Navbar from "../layout/Navbar";
 import Footer from "../layout/Footer";
 import ProductCard from "../components/productCard";
 import { Product } from "../_utils/types/Product";
-import { getProductByCategory } from "../api/productCategory";
-import { getCategory } from "../api/category";
+import { getProductBySubcategory } from "../api/productCategory"; // Updated import
+import { getSubCategory } from "../api/category";
 import Spinner from "../components/ReactLoading";
 import Header from "../components/Header";
 
@@ -49,7 +49,7 @@ const ProductPage: React.FC<Props> = ({
     setLoading(true);
 
     try {
-      const response = await getProductByCategory(slug, page + 1); // Fetch next page of products
+      const response = await getProductBySubcategory(slug, page + 1); // Fetch next page of products
       setProducts((prevProducts) => [...prevProducts, ...response.data]);
       setPage((prevPage) => prevPage + 1);
 
@@ -63,6 +63,7 @@ const ProductPage: React.FC<Props> = ({
       setLoading(false);
     }
   };
+
   useEffect(() => {
     const observer = new IntersectionObserver((entries) => {
       const entry = entries[0];
@@ -70,24 +71,23 @@ const ProductPage: React.FC<Props> = ({
         loadMoreProducts(); // Load more products when the ref is in view
       }
     });
-  
+
     if (loadMoreRef.current) {
       observer.observe(loadMoreRef.current);
     }
-  
+
     return () => {
       if (loadMoreRef.current) {
         observer.unobserve(loadMoreRef.current);
       }
     };
   }, [loadMoreRef, loading, hasMore, slug]);
-  
 
   useEffect(() => {
     const fetchInitialProducts = async () => {
       setLoading(true);
       try {
-        const response = await getProductByCategory(slug, 1);
+        const response = await getProductBySubcategory(slug, 1); // Fetch initial products
         setProducts(response.data);
         setPage(1);
         setHasMore(response.meta?.pagination?.total > response.data.length);
@@ -97,10 +97,9 @@ const ProductPage: React.FC<Props> = ({
         setLoading(false);
       }
     };
-  
+
     fetchInitialProducts();
   }, [slug]);
-  
 
   return (
     <>
@@ -112,15 +111,15 @@ const ProductPage: React.FC<Props> = ({
           content={`products, ${slug}, best products, shop online`}
         />
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={`https://yourstore.com/category/${slug}`} />
+        <link rel="canonical" href={`https://yourstore.com/subcategory/${slug}`} />
       </Head>
 
       <Header imageUrl={coverImage} />
       <Navbar />
 
       <section className="text-gray-600 body-font px-0 sm:px-2 md:px-2 md:w-full lg:px-24">
-        <div className="container px-2 sm:px-0  lg:px-12 py-24 mx-auto">
-        <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <div className="container px-2 sm:px-0 lg:px-12 py-24 mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-6">
             {products.map((product) => (
               <ProductCard
                 key={product.id}
@@ -152,8 +151,8 @@ export async function getServerSideProps(context: any) {
   const { slug } = context.params;
 
   try {
-    const fetchedProducts = await getProductByCategory(slug, 1); // Fetch initial page
-    const fetchCategory = await getCategory(slug);
+    const fetchedProducts = await getProductBySubcategory(slug, 1); // Fetch initial page
+    const fetchCategory = await getSubCategory(slug);
     const totalProducts = fetchedProducts.meta?.pagination?.total || 0;
 
     return {
@@ -161,14 +160,12 @@ export async function getServerSideProps(context: any) {
         params: {
           slug,
         },
-
         initialProducts: fetchedProducts.data || [],
         totalProducts,
         metaTitle:
           fetchCategory?.meta_title ||
           `Products in ${slug} category - Your Store`,
-        cover_image: fetchCategory?.cover_image?.url,
-
+        cover_image: fetchCategory?.cover_image?.url || null, // Set to null if undefined
         metaDescription:
           fetchCategory?.meta_desc ||
           `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
@@ -186,10 +183,11 @@ export async function getServerSideProps(context: any) {
         metaTitle: `Products in ${slug} category - Your Store`,
         metaDescription: `Explore a wide range of products in the ${slug} category. Find the best deals on high-quality products, handpicked just for you!`,
         error: "Failed to load products",
-        cover_image: "",
+        cover_image: null, // Ensure cover_image is null if there's an error
       },
     };
   }
 }
+
 
 export default ProductPage;

@@ -16,28 +16,28 @@ const ShopByAge: React.FC = () => {
       {/* Age groups */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {/* Age 3-6 */}
-        <Link href="/shop/age/3-6">
+        <Link href="/shop_by_age/three-four-five-years">
           <div className="flex items-center justify-center bg-gradient-to-br from-green-400 to-yellow-400 text-white rounded-3xl h-32 w-52 shadow-xl cursor-pointer border-4 border-green-200 hover:bg-gradient-to-br hover:from-yellow-400 hover:to-green-400">
             <span className="text-2xl font-bold hover:text-gray-800 transition-colors duration-300">3-6 Years</span>
           </div>
         </Link>
 
         {/* Age 6-8 */}
-        <Link href="/shop/age/6-8">
+        <Link href="/shop_by_age/six-seven-eight-years">
           <div className="flex items-center justify-center bg-gradient-to-br from-blue-400 to-purple-400 text-white rounded-3xl h-32 w-52 shadow-xl cursor-pointer border-4 border-blue-200 hover:bg-gradient-to-br hover:from-purple-400 hover:to-blue-400">
             <span className="text-2xl font-bold hover:text-gray-800 transition-colors duration-300">6-8 Years</span>
           </div>
         </Link>
 
         {/* Age 8-10 */}
-        <Link href="/shop/age/8-10">
+        <Link href="/shop_by_age/eight-nine-ten-years">
           <div className="flex items-center justify-center bg-gradient-to-br from-red-400 to-orange-400 text-white rounded-3xl h-32 w-52 shadow-xl cursor-pointer border-4 border-red-200 hover:bg-gradient-to-br hover:from-orange-400 hover:to-red-400">
             <span className="text-2xl font-bold hover:text-gray-800 transition-colors duration-300">8-10 Years</span>
           </div>
         </Link>
 
         {/* Age 10+ */}
-        <Link href="/shop/age/10-plus">
+        <Link href="/shop_by_age/ten-plus-years">
           <div className="flex items-center justify-center bg-gradient-to-br from-teal-400 to-blue-500 text-white rounded-3xl h-32 w-52 shadow-xl cursor-pointer border-4 border-teal-200 hover:bg-gradient-to-br hover:from-blue-500 hover:to-teal-400">
             <span className="text-2xl font-bold hover:text-gray-800 transition-colors duration-300">10+ Years</span>
           </div>

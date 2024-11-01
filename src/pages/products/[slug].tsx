@@ -9,6 +9,9 @@ import {
 } from "../api/productCategory";
 import { useCart } from "../context/CartContext";
 import { Helmet } from "react-helmet";
+import { ToastContainer, toast } from 'react-toastify'; // Import ToastContainer and toast
+import 'react-toastify/dist/ReactToastify.css'; // Import the CSS for Toastify
+
 
 function ProductPage({ productData }) {
   const {
@@ -19,6 +22,7 @@ function ProductPage({ productData }) {
     stock_quantity,
     slug,
     images,
+    id,
   } = productData;
 
   // Convert product_desc from rich text format to a string
@@ -75,31 +79,36 @@ function ProductPage({ productData }) {
     visibleStartIndex + visibleThumbnailCount
   );
 
-  // Validate pincode
-  const validatePincode = () => {
-    if (pincode.length !== 6 || isNaN(pincode)) {
-      setPincodeError("Invalid pincode. Please enter a 6-digit pincode.");
-    } else {
-      setPincodeError("");
-      // Optionally, you can implement further logic here (e.g., fetching delivery info)
-    }
-  };
+  
 
   // Use Cart Context
   const { addItem } = useCart();
 
   // Handle Add to Cart
-  const handleAddToCart = () => {
-    addItem({
-      productSlug: slug,
-      productName: product_name,
-      productQuantity: quantity,
-      price: price,
-      discount: discount,
-      stock: stock_quantity,
-      productImage: mainImage,
-    });
-  };
+  // Handle Add to Cart
+const handleAddToCart = () => {
+  addItem({
+    productSlug: slug,
+    productName: product_name,
+    productQuantity: quantity,
+    price: price,
+    discount: discount,
+    stock: stock_quantity,
+    productImage: mainImage,
+    productId:id,
+  });
+
+  // Show a toast notification
+  toast.success(`${product_name} has been added to the cart!`, {
+    position: "top-right",
+    autoClose: 2000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+  });
+};
+
 
   return (
     <div>
