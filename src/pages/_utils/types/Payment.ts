@@ -1,13 +1,14 @@
 // Define the structure of the order data
 export interface Payment {
      order:number,
-     amount:number,
+     amount:string,
      payment_status:string,
      transaction_id:number,
      payment_date:string
      payment_method:PaymentMethod;
-     currency:number
+     currency:string
      receipt:string
+   
      
 
   }

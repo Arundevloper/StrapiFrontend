@@ -14,7 +14,7 @@ interface Profile {
     pincode: number;
     username: string;
     email: string;
-    order_item:any
+    order_items:any
     // Order-related fields
     quantity?: number; // Made optional
     price?: number;    // Made optional

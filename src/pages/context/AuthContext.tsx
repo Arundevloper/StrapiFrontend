@@ -1,34 +1,48 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import axios from 'axios';
 
+// Define a more specific user type according to your API response
+interface User {
+  id: string;
+  email: string;
+  // Add other relevant fields based on your user object
+}
+
 interface AuthContextType {
-  user: any;
+  user: User | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  loading: boolean; // Add loading state
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Initialize loading state
 
   useEffect(() => {
-    // Check local storage for the token
     const token = localStorage.getItem('token');
     if (token) {
-      // Optionally, you can fetch the user info here using the token
-      // For example, you might call an endpoint that returns user info
+      // Fetch the user info if the token is present
       axios.get('http://localhost:1337/api/users/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
-      }).then(response => {
+      })
+      .then(response => {
         setUser(response.data);
-      }).catch(() => {
-        // Handle case where token is invalid or user not found
+      })
+      .catch(() => {
         localStorage.removeItem('token'); // Clear invalid token
+        setUser(null); // Ensure user is set to null if there's an error
+      })
+      .finally(() => {
+        setLoading(false); // Set loading to false after the fetch
       });
+    } else {
+      setLoading(false); // Set loading to false if there's no token
     }
   }, []);
 
@@ -38,11 +52,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         identifier: email,
         password,
       });
-
       setUser(response.data.user);
       localStorage.setItem('token', response.data.jwt);
     } catch (error) {
       console.error('Login failed:', error);
+      // You can throw an error or set some error state here if needed
     }
   };
 
@@ -54,7 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const isAuthenticated = user !== null;
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, isAuthenticated }}>
+    <AuthContext.Provider value={{ user, login, logout, isAuthenticated, loading }}>
       {children}
     </AuthContext.Provider>
   );

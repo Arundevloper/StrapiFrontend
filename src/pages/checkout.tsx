@@ -5,6 +5,7 @@ import { useCart } from "./context/CartContext";
 import { useAuth } from "./context/AuthContext"; // Adjust the path as necessary
 import { useRouter } from "next/router";
 import { Helmet } from "react-helmet";
+import React, {  useState } from "react";
 import {
   createOrder,
   saveOrderItem,
@@ -14,11 +15,14 @@ import {
   verifyandupdate,
 } from "../pages/api/productCategory";
 import { jwtDecode } from "jwt-decode";
+import { toast } from "react-toastify";
+import OrderLoading from "./components/OrderLoading";
+
 
 // Load Razorpay script
 const loadRazorpayScript = () => {
   return new Promise((resolve) => {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       const script = document.createElement("script");
       script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => {
@@ -37,8 +41,9 @@ const loadRazorpayScript = () => {
 loadRazorpayScript();
 
 const Checkout: NextPage = () => {
-  const { cart } = useCart();
+  const { cart,clearCart } = useCart();
   const { isAuthenticated } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   if (!isAuthenticated) {
@@ -46,7 +51,8 @@ const Checkout: NextPage = () => {
     router.push(`/login?redirect=${encodeURIComponent(router.asPath)}`);
     return null; // Prevent rendering the rest of the component
   }
-
+  29.58;
+  1183.2;
   const shippingCost = 50;
 
   const calculateTotalMrp = () => {
@@ -68,10 +74,7 @@ const Checkout: NextPage = () => {
     return calculateTotalMrp() - calculateTotalDiscount();
   };
 
-  const getShippingCost = () => {
-    const total = calculateDiscountedPrice();
-    return total > 500 ? 0 : 50; // Free shipping if total exceeds ₹500
-  };
+
 
   interface MyToken {
     id: number; // User ID
@@ -95,6 +98,8 @@ const Checkout: NextPage = () => {
 
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
+
 
     const isScriptLoaded = await loadRazorpayScript();
     if (!isScriptLoaded) {
@@ -121,7 +126,7 @@ const Checkout: NextPage = () => {
       const orders = response.data.id;
 
       const orderItemsPayload = cart.map((item) => ({
-        orders,
+        order:orders,
         product: item.productId,
         quantity: item.productQuantity,
         price: item.price,
@@ -140,8 +145,12 @@ const Checkout: NextPage = () => {
       const paymentResponse = await savePaymentInformation(PaymentData);
       const paymentId = paymentResponse.data.documentId;
 
+      const actualPrice = (calculateDiscountedPrice() + shippingCost).toFixed(
+        2
+      );
+
       const preTransactionResponse = await preTransaction({
-        amount: calculateDiscountedPrice() + getShippingCost(),
+        amount: 1,
         currency: "INR",
         receipt: `receipt#${orders}`,
         notes: {
@@ -150,7 +159,7 @@ const Checkout: NextPage = () => {
       });
 
       const { orderId, amount } = preTransactionResponse;
-
+     
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
         amount: amount * 100, // Convert to paise
@@ -158,21 +167,21 @@ const Checkout: NextPage = () => {
         name: "LabnBox",
         description: "Your Transaction Description",
         order_id: orderId,
-        handler: async (response:any) => {
+        handler: async (response: any) => {
           // Call verifyandupdate and handle response based on status code
-          const verificationResponse = await verifyandupdate( {
+          await verifyandupdate({
             payment_id: paymentId,
             razorpay_signature: response.razorpay_signature,
             razorpay_payment_id: response.razorpay_payment_id,
-            order_id:orderId,
-            amount:amount
+            order_id: orderId,
+            amount: String(amount),
           });
 
-          if (verificationResponse.status === 200) {
-            console.log("Payment verified and updated successfully");
-          } else if (verificationResponse.status === 400) {
-            console.error("Payment verification failed");
-          }
+          router.push("/orderhistory");
+          clearCart();
+          toast.success("Order Placed Successfully");
+     
+       
         },
         prefill: {
           name: `${formData.first_name} ${formData.last_name}`,
@@ -182,17 +191,32 @@ const Checkout: NextPage = () => {
         theme: {
           color: "#3399cc",
         },
+        modal: {
+          ondismiss: () => {
+             toast.error("Order Not placed")
+            router.push("/orderhistory");
+          },
+        },
       };
 
       const rzp1 = new Razorpay(options);
 
       rzp1.on("payment.failed", async (response) => {
-        await upda(paymentId, { payment_status: "Failed" });
+        await updatePaymentInformation(paymentId, { payment_status: "Failed" });
+        
       });
 
+      
+
       rzp1.open();
+
+     setIsLoading(false);
+    
     } catch (error) {
+      toast.error("Payment Failed! Please try again later")
+      router.push("/orderhistory");
       console.error("Error creating order:", error);
+
     }
   };
 
@@ -209,6 +233,7 @@ const Checkout: NextPage = () => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       </Helmet>
       <Navbar />
+      {isLoading && <OrderLoading type="spin" color="#3399cc" />}
       <section className="mt-20">
         <div className="flex flex-col text-center w-full">
           <h1 className="sm:text-3xl text-2xl font-medium title-font mb-4 text-custom-blue mt-10 text-gray-900">
